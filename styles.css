@@ -232,6 +232,24 @@ select {
   background: rgba(255, 255, 255, 0.94);
 }
 
+.content-header__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
+}
+
+.content-header__controls .content-header__select {
+  flex: 1 1 220px;
+}
+
+.content-header__demo-btn {
+  flex: 0 0 auto;
+  min-height: 56px;
+  white-space: nowrap;
+}
+
 .content-header__hint {
   margin: 0;
   color: var(--muted);
@@ -252,6 +270,10 @@ select {
   width: min(520px, 100%);
   min-width: min(520px, 100%);
   justify-items: start;
+}
+
+.content-header--home .content-header__controls {
+  justify-content: flex-start;
 }
 
 .content-header--home .content-header__hint {
@@ -461,8 +483,16 @@ select {
 
 .entry-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.9fr);
   gap: 18px;
+}
+
+.form-panel {
+  order: 1;
+}
+
+.assist-panel {
+  order: 2;
 }
 
 .assist-panel,
@@ -1015,6 +1045,31 @@ select:focus {
   border-radius: inherit;
 }
 
+.stock-card__purchase {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(20, 53, 44, 0.08);
+}
+
+.stock-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stock-card__buy-btn {
+  padding: 10px 14px;
+}
+
+.stock-card__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .followup-card {
   display: flex;
   justify-content: space-between;
@@ -1047,6 +1102,14 @@ select:focus {
 .followup-card__side--danger {
   color: #b43f2d;
   background: rgba(212, 76, 54, 0.12);
+}
+
+.med-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .med-card__details {
@@ -1091,6 +1154,10 @@ select:focus {
     min-width: 0;
     width: 100%;
     justify-items: start;
+  }
+
+  .content-header__controls {
+    width: 100%;
   }
 
   .content-header__hint {
@@ -1142,6 +1209,15 @@ select:focus {
 
   .content-header__select {
     font-size: 18px;
+  }
+
+  .content-header__controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .content-header__demo-btn {
+    width: 100%;
   }
 
   .app-stage {

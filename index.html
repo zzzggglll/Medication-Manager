@@ -24,14 +24,14 @@
             <p class="page-nav__group-title">首页</p>
             <div class="page-nav__links">
               <button class="page-nav__link" type="button" data-view-target="homeView">首页</button>
+              <button class="page-nav__link" type="button" data-view-target="reminderView">今日提醒和记录</button>
             </div>
           </div>
 
           <div class="page-nav__group">
             <p class="page-nav__group-title">核心功能</p>
             <div class="page-nav__links">
-              <button class="page-nav__link" type="button" data-view-target="planView">创建计划</button>
-              <button class="page-nav__link" type="button" data-view-target="reminderView">提醒与记录</button>
+              <button class="page-nav__link" type="button" data-view-target="planView">新建用药计划</button>
               <button class="page-nav__link" type="button" data-view-target="stockView">库存提醒</button>
               <button class="page-nav__link" type="button" data-view-target="followupView">复诊提醒</button>
               <button class="page-nav__link" type="button" data-view-target="medicationView">用药计划</button>
@@ -51,7 +51,10 @@
           </div>
           <div class="content-header__meta">
             <span class="content-header__label">当前患者</span>
-            <select id="headerPatientSelect" class="content-header__select" aria-label="选择当前患者"></select>
+            <div class="content-header__controls">
+              <select id="headerPatientSelect" class="content-header__select" aria-label="选择当前患者"></select>
+              <button id="seedDemoBtn" class="ghost-btn content-header__demo-btn" type="button">加载演示数据</button>
+            </div>
             <p class="content-header__hint">切换后，提醒、库存、复诊和记录会同步更新。</p>
           </div>
         </header>
@@ -68,13 +71,13 @@
                 </p>
                 <div class="hero__chips">
                   <span>多患者档案</span>
-                  <span>提醒与记录</span>
+                  <span>今日提醒和记录</span>
                   <span>库存与复诊</span>
                   <span>家庭协同管理</span>
                 </div>
                 <div class="form-actions home-actions">
-                  <button class="primary-btn" type="button" data-view-target="planView">开始创建计划</button>
-                  <button class="secondary-btn" type="button" data-view-target="reminderView">查看提醒与记录</button>
+                  <button class="primary-btn" type="button" data-view-target="planView">去新建用药计划</button>
+                  <button class="secondary-btn" type="button" data-view-target="reminderView">查看今日提醒和记录</button>
                 </div>
               </div>
             </section>
@@ -87,12 +90,12 @@
               </article>
               <article class="card home-feature-card">
                 <p class="section-kicker">02</p>
-                <h3>创建计划</h3>
+                <h3>新建用药计划</h3>
                 <p>支持拍照识别建档，也支持手动为不同患者创建长期用药方案。</p>
               </article>
               <article class="card home-feature-card">
                 <p class="section-kicker">03</p>
-                <h3>提醒与记录</h3>
+                <h3>今日提醒和记录</h3>
                 <p>查看今日待完成服药任务，并同步记录血压、血糖和身体状况。</p>
               </article>
               <article class="card home-feature-card">
@@ -108,9 +111,8 @@
               <div class="section-heading">
                 <div>
                   <p class="section-kicker">Plan Builder</p>
-                  <h2>创建个人用药计划</h2>
+                  <h2>新建用药计划</h2>
                 </div>
-                <button id="seedDemoBtn" class="ghost-btn" type="button">加载演示数据</button>
               </div>
 
               <div class="entry-grid">
@@ -259,8 +261,8 @@
                     </label>
 
                     <div class="form-actions">
-                      <button class="primary-btn" type="submit">加入用药计划</button>
-                      <button class="secondary-btn" type="reset">清空表单</button>
+                      <button id="submitMedicationBtn" class="primary-btn" type="submit">加入用药计划</button>
+                      <button id="resetMedicationBtn" class="secondary-btn" type="reset">清空表单</button>
                     </div>
                   </form>
                 </section>
@@ -502,7 +504,10 @@
           <h3></h3>
           <p class="med-card__purpose"></p>
         </div>
-        <button class="danger-link" type="button">删除</button>
+        <div class="med-card__actions">
+          <button class="mini-btn mini-btn--ghost med-card__edit-btn" type="button">修改</button>
+          <button class="danger-link" type="button">删除</button>
+        </div>
       </div>
       <div class="med-card__details"></div>
     </article>

@@ -1,5 +1,6 @@
 const STORAGE_KEY = "chronic_medication_guardian_v2";
 const STATUS_DELAY_MINUTES = 30;
+const MEITUAN_MEDICINE_ENTRY_URL = "https://i.meituan.com/peisong/paotui";
 
 const medicationForm = document.getElementById("medicationForm");
 const seedDemoBtn = document.getElementById("seedDemoBtn");
@@ -11,6 +12,8 @@ const recognizeBtn = document.getElementById("recognizeBtn");
 const clearRecognitionBtn = document.getElementById("clearRecognitionBtn");
 const recognitionResultEl = document.getElementById("recognitionResult");
 const feedbackBarEl = document.getElementById("feedbackBar");
+const submitMedicationBtnEl = document.getElementById("submitMedicationBtn");
+const resetMedicationBtnEl = document.getElementById("resetMedicationBtn");
 const patientSelectEl = document.getElementById("patientSelect");
 const newPatientNameEl = document.getElementById("newPatientName");
 const conditionSelectEl = document.getElementById("conditionSelect");
@@ -63,13 +66,13 @@ const VIEW_META = {
     subtitle: "集中了解网站用途、主要功能和使用路径，更像一个清晰正式的慢病管理网站入口。",
   },
   planView: {
-    eyebrow: "创建计划",
-    title: "创建患者用药计划",
+    eyebrow: "新建用药计划",
+    title: "新建用药计划",
     subtitle: "为当前患者录入慢病类型、药品、提醒时间、库存和复诊周期，建立完整档案。",
   },
   reminderView: {
-    eyebrow: "提醒与记录",
-    title: "提醒与记录",
+    eyebrow: "今日提醒和记录",
+    title: "今日提醒和记录",
     subtitle: "把今日总览、服药提醒和健康记录放在同一处，方便按患者完成日常管理。",
   },
   stockView: {
@@ -98,6 +101,8 @@ const state = loadState();
 let lastSelectedCondition = PRESET_CONDITIONS[0] || "高血压";
 let lastSelectedPatientId = "";
 let currentViewId = document.querySelector(".app-view--active")?.id || "homeView";
+let editingMedicationId = "";
+let isProgrammaticMedicationReset = false;
 
 bootstrap();
 
@@ -111,11 +116,7 @@ function bootstrap() {
 
 function attachEvents() {
   medicationForm.addEventListener("submit", handleAddMedication);
-  medicationForm.addEventListener("reset", () => {
-    window.setTimeout(() => {
-      syncPlannerContext();
-    }, 0);
-  });
+  medicationForm.addEventListener("reset", handleMedicationFormReset);
   seedDemoBtn.addEventListener("click", seedDemoData);
   patientSelectEl.addEventListener("change", handlePatientChange);
   headerPatientSelectEl.addEventListener("change", handleHeaderPatientChange);
@@ -296,6 +297,7 @@ function exitNewPatientMode() {
 function handlePatientChange() {
   const patientId = patientSelectEl.value;
   if (patientId === NEW_PATIENT_VALUE) {
+    clearMedicationEditingState();
     enterNewPatientMode();
     return;
   }
@@ -306,6 +308,7 @@ function handlePatientChange() {
 function handleHeaderPatientChange() {
   const patientId = headerPatientSelectEl.value;
   if (patientId === NEW_PATIENT_VALUE) {
+    clearMedicationEditingState();
     renderPatientOptions(state.activePatientId || lastSelectedPatientId);
     switchView("planView");
     enterNewPatientMode();
@@ -406,12 +409,90 @@ function syncPlannerContext() {
   setSelectedCondition(activePatient?.condition || PRESET_CONDITIONS[0] || "高血压");
   setDefaultDates();
   renderScheduleInputs();
+  updateMedicationFormMode();
 }
 
 function resetMedicationPlannerForm() {
+  isProgrammaticMedicationReset = true;
   medicationForm.reset();
+}
+
+function handleMedicationFormReset() {
+  const wasEditingMedication = isEditingMedication();
+
+  window.setTimeout(() => {
+    clearRecognitionResult();
+    clearMedicationEditingState();
+    syncPlannerContext();
+
+    if (!isProgrammaticMedicationReset && wasEditingMedication) {
+      setFeedback("已取消修改，表单已恢复为新建状态。");
+    }
+
+    isProgrammaticMedicationReset = false;
+  }, 0);
+}
+
+function isEditingMedication() {
+  return Boolean(editingMedicationId);
+}
+
+function updateMedicationFormMode() {
+  const isEditing = isEditingMedication();
+  submitMedicationBtnEl.textContent = isEditing ? "保存修改" : "加入用药计划";
+  resetMedicationBtnEl.textContent = isEditing ? "取消修改" : "清空表单";
+
+  if (isEditing) {
+    patientSelectEl.disabled = true;
+    newPatientNameEl.disabled = true;
+    return;
+  }
+
+  if (!patientSelectEl.hidden) {
+    patientSelectEl.disabled = false;
+  }
+
+  if (!newPatientNameEl.hidden) {
+    newPatientNameEl.disabled = false;
+  }
+}
+
+function clearMedicationEditingState() {
+  editingMedicationId = "";
+  updateMedicationFormMode();
+}
+
+function startMedicationEdit(medicationId) {
+  const activePatient = getActivePatient();
+  const medication = activePatient?.medications.find((item) => item.id === medicationId);
+
+  if (!activePatient || !medication) {
+    setFeedback("未找到要修改的用药计划，请刷新后重试。");
+    return;
+  }
+
+  editingMedicationId = medication.id;
+  renderPatientOptions(activePatient.id);
+  exitNewPatientMode();
   clearRecognitionResult();
-  syncPlannerContext();
+  updateMedicationFormMode();
+
+  setSelectedCondition(medication.condition || activePatient.condition || PRESET_CONDITIONS[0]);
+  document.getElementById("medName").value = medication.name;
+  document.getElementById("medPurpose").value = medication.purpose || "";
+  document.getElementById("dosePerTake").value = String(medication.dosePerTake);
+  document.getElementById("doseUnit").value = medication.doseUnit;
+  document.getElementById("frequencyPerDay").value = String(medication.frequencyPerDay);
+  document.getElementById("startDate").value = medication.startDate;
+  document.getElementById("stockTotal").value = String(medication.stockTotal);
+  document.getElementById("refillThresholdDays").value = String(medication.refillThresholdDays);
+  document.getElementById("lastVisitDate").value = medication.lastVisitDate;
+  document.getElementById("followupCycleDays").value = String(medication.followupCycleDays);
+  document.getElementById("medNote").value = medication.note || "";
+  renderScheduleInputs(medication.scheduleTimes);
+
+  switchView("planView");
+  setFeedback(`正在修改 ${medication.name} 的用药计划，保存后会覆盖原计划。`);
 }
 
 function handleViewTriggerClick(event) {
@@ -462,6 +543,7 @@ function renderContentHeader(activePatient) {
   contentTitleEl.textContent = meta.title;
   contentSubtitleEl.textContent = meta.subtitle;
   headerPatientSelectEl.value = activePatient?.id || NEW_PATIENT_VALUE;
+  seedDemoBtn.hidden = currentViewId !== "homeView";
   contentHeaderEl.classList.toggle("content-header--home", currentViewId === "homeView");
 }
 
@@ -794,7 +876,7 @@ function recognizeMedicationFromImage(fileName, sourceType, mode) {
         dosePerTake: 1,
         doseUnit: "片",
         frequencyPerDay: 1,
-        scheduleTimes: ["21:00"],
+        scheduleTimes: ["19:00"],
         stockTotal: 30,
         refillThresholdDays: 7,
         followupCycleDays: 30,
@@ -910,12 +992,18 @@ function handleAddMedication(event) {
     return;
   }
 
+  const editingMedication = isEditingMedication()
+    ? activePatient.medications.find((item) => item.id === editingMedicationId)
+    : null;
   const duplicate = activePatient.medications.find((item) =>
-    item.name.toLowerCase() === medName.toLowerCase() && computeDaysLeft(item) > 0
+    item.id !== editingMedicationId &&
+    item.name.toLowerCase() === medName.toLowerCase() &&
+    computeDaysLeft(item) > 0
   );
 
   const medication = normalizeMedication({
-    id: crypto.randomUUID(),
+    ...editingMedication,
+    id: editingMedication?.id || crypto.randomUUID(),
     condition: condition || activePatient.condition || "未分类",
     name: medName,
     purpose: medPurpose,
@@ -929,19 +1017,29 @@ function handleAddMedication(event) {
     lastVisitDate,
     followupCycleDays,
     note: medNote,
-    createdAt: new Date().toISOString(),
+    createdAt: editingMedication?.createdAt || new Date().toISOString(),
+    updatedAt: editingMedication ? new Date().toISOString() : "",
   });
 
   activePatient.condition = condition || activePatient.condition;
-  activePatient.medications.unshift(medication);
+  if (editingMedication) {
+    activePatient.medications = activePatient.medications.map((item) =>
+      item.id === editingMedication.id ? medication : item
+    );
+    pruneReminderEntriesForMedication(activePatient, medication.id, medication.scheduleTimes);
+  } else {
+    activePatient.medications.unshift(medication);
+  }
   saveState();
 
   resetMedicationPlannerForm();
 
   setFeedback(
-    duplicate
-      ? `已加入计划，但发现 ${medName} 可能存在重复购药风险，建议先核对现有库存。`
-      : `${medName} 已加入用药计划。`
+    editingMedication
+      ? `${medName} 的用药计划已更新，原计划已覆盖。`
+      : duplicate
+        ? `已加入计划，但发现 ${medName} 可能存在重复购药风险，建议先核对现有库存。`
+        : `${medName} 已加入用药计划。`
   );
   renderApp();
 }
@@ -997,6 +1095,23 @@ function seedDemoData() {
       note: "早晚餐后服用，避免空腹。",
       createdAt: new Date().toISOString(),
     },
+    {
+      id: crypto.randomUUID(),
+      condition: "高脂血症",
+      name: "阿托伐他汀钙片",
+      purpose: "降脂",
+      dosePerTake: 1,
+      doseUnit: "片",
+      frequencyPerDay: 1,
+      scheduleTimes: ["19:00"],
+      startDate: formatDateInput(addDays(new Date(), -28)),
+      stockTotal: 30,
+      refillThresholdDays: 7,
+      lastVisitDate: formatDateInput(addDays(new Date(), -28)),
+      followupCycleDays: 30,
+      note: "当前演示数据中此药库存告急，可直接展示去美团买药功能。",
+      createdAt: new Date().toISOString(),
+    },
   ].map(normalizeMedication);
 
   const todayKey = getTodayKey();
@@ -1009,7 +1124,7 @@ function seedDemoData() {
 
   saveState();
   resetMedicationPlannerForm();
-  setFeedback("演示数据已载入。");
+  setFeedback("演示数据已载入，其中包含一条库存告急药品，可到库存提醒里演示去美团买药。");
   renderApp();
 }
 
@@ -1520,7 +1635,7 @@ function renderStockBoard() {
         : `预计还能服用 ${daysLeft} 天；提醒阈值为 ${item.refillThresholdDays} 天。`;
 
       if (daysLeft <= 3) {
-        pill.textContent = "高风险";
+        pill.textContent = "库存告急";
         pill.classList.add("pill--danger");
         fill.style.background = "linear-gradient(90deg, #d44c36, #ef8f45)";
       } else if (daysLeft <= item.refillThresholdDays) {
@@ -1530,8 +1645,66 @@ function renderStockBoard() {
         pill.textContent = "库存安全";
       }
 
+      if (daysLeft <= item.refillThresholdDays) {
+        node.appendChild(createStockPurchaseBlock(item, daysLeft));
+      }
+
       stockBoardEl.appendChild(node);
     });
+}
+
+function createStockPurchaseBlock(medication, daysLeft) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "stock-card__purchase";
+
+  const actionsEl = document.createElement("div");
+  actionsEl.className = "stock-card__actions";
+
+  const buyBtn = document.createElement("button");
+  buyBtn.type = "button";
+  buyBtn.className = "primary-btn stock-card__buy-btn";
+  buyBtn.textContent = daysLeft <= 3 ? "去美团买药" : "提前去美团备药";
+  buyBtn.addEventListener("click", () => {
+    openMeituanMedicineEntry(medication.name);
+  });
+
+  actionsEl.appendChild(buyBtn);
+  wrapper.appendChild(actionsEl);
+
+  const noteEl = document.createElement("p");
+  noteEl.className = "stock-card__note";
+  noteEl.textContent = `将打开美团官方入口，并尝试复制“${medication.name}”药名，方便继续搜索和购买。`;
+  wrapper.appendChild(noteEl);
+
+  return wrapper;
+}
+
+function openMeituanMedicineEntry(medicationName) {
+  const purchaseTab = window.open(MEITUAN_MEDICINE_ENTRY_URL, "_blank", "noopener");
+  if (!purchaseTab) {
+    window.location.href = MEITUAN_MEDICINE_ENTRY_URL;
+  }
+
+  copyToClipboard(medicationName).then((copied) => {
+    setFeedback(
+      copied
+        ? `已打开美团买药入口，并复制“${medicationName}”到剪贴板。进入后可直接粘贴搜索。`
+        : `已打开美团买药入口。若页面未自动带出药品，请搜索“${medicationName}”。`
+    );
+  });
+}
+
+async function copyToClipboard(text) {
+  if (!navigator.clipboard?.writeText || !window.isSecureContext) {
+    return false;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function renderFollowups() {
@@ -1756,19 +1929,17 @@ function renderMedicationList() {
           <div>备注：${escapeHtml(item.note || "暂无")}</div>
         `;
 
+        node.querySelector(".med-card__edit-btn").addEventListener("click", () => {
+          startMedicationEdit(item.id);
+        });
+
         node.querySelector(".danger-link").addEventListener("click", () => {
           if (!window.confirm(`确定删除 ${item.name} 吗？`)) {
             return;
           }
 
           activePatient.medications = activePatient.medications.filter((med) => med.id !== item.id);
-          Object.keys(activePatient.reminders).forEach((dateKey) => {
-            Object.keys(activePatient.reminders[dateKey] || {}).forEach((key) => {
-              if (key.startsWith(`${item.id}_`)) {
-                delete activePatient.reminders[dateKey][key];
-              }
-            });
-          });
+          pruneReminderEntriesForMedication(activePatient, item.id);
           saveState();
           setFeedback(`${item.name} 已从计划中移除。`);
           renderApp();
@@ -1824,6 +1995,28 @@ function getFollowupTone(diff) {
   }
 
   return "normal";
+}
+
+function pruneReminderEntriesForMedication(activePatient, medicationId, validTimes = []) {
+  const validReminderKeys = new Set(validTimes.map((time) => reminderKey(medicationId, time)));
+
+  Object.keys(activePatient.reminders).forEach((dateKey) => {
+    Object.keys(activePatient.reminders[dateKey] || {}).forEach((key) => {
+      if (!key.startsWith(`${medicationId}_`)) {
+        return;
+      }
+
+      if (validReminderKeys.size > 0 && validReminderKeys.has(key)) {
+        return;
+      }
+
+      delete activePatient.reminders[dateKey][key];
+    });
+
+    if (Object.keys(activePatient.reminders[dateKey] || {}).length === 0) {
+      delete activePatient.reminders[dateKey];
+    }
+  });
 }
 
 function getReminderStatus(key) {
