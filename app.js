@@ -47,7 +47,8 @@ const completedCountLabelEl = document.getElementById("completedCountLabel");
 const contentEyebrowEl = document.getElementById("contentEyebrow");
 const contentTitleEl = document.getElementById("contentTitle");
 const contentSubtitleEl = document.getElementById("contentSubtitle");
-const activePatientNameEl = document.getElementById("activePatientName");
+const headerPatientSelectEl = document.getElementById("headerPatientSelect");
+const contentHeaderEl = document.querySelector(".content-header");
 
 const statPendingCountEl = document.getElementById("statPendingCount");
 const statLowStockEl = document.getElementById("statLowStock");
@@ -117,6 +118,7 @@ function attachEvents() {
   });
   seedDemoBtn.addEventListener("click", seedDemoData);
   patientSelectEl.addEventListener("change", handlePatientChange);
+  headerPatientSelectEl.addEventListener("change", handleHeaderPatientChange);
   newPatientNameEl.addEventListener("blur", confirmNewPatient);
   newPatientNameEl.addEventListener("keydown", handleNewPatientKeydown);
   frequencyPerDayEl.addEventListener("change", handleFrequencyChange);
@@ -254,19 +256,21 @@ function createPatientProfile(name) {
 }
 
 function renderPatientOptions(selectedPatientId = state.activePatientId) {
-  patientSelectEl.innerHTML = "";
+  [patientSelectEl, headerPatientSelectEl].forEach((selectEl) => {
+    selectEl.innerHTML = "";
 
-  state.patients.forEach((patient) => {
-    patientSelectEl.add(new Option(patient.name, patient.id));
+    state.patients.forEach((patient) => {
+      selectEl.add(new Option(patient.name, patient.id));
+    });
+    selectEl.add(new Option("新建患者", NEW_PATIENT_VALUE));
+
+    if (selectedPatientId && state.patients.some((patient) => patient.id === selectedPatientId)) {
+      selectEl.value = selectedPatientId;
+      return;
+    }
+
+    selectEl.value = NEW_PATIENT_VALUE;
   });
-  patientSelectEl.add(new Option("新建患者", NEW_PATIENT_VALUE));
-
-  if (selectedPatientId && state.patients.some((patient) => patient.id === selectedPatientId)) {
-    patientSelectEl.value = selectedPatientId;
-    return;
-  }
-
-  patientSelectEl.value = NEW_PATIENT_VALUE;
 }
 
 function enterNewPatientMode(seedValue = "") {
@@ -293,6 +297,19 @@ function handlePatientChange() {
   const patientId = patientSelectEl.value;
   if (patientId === NEW_PATIENT_VALUE) {
     enterNewPatientMode();
+    return;
+  }
+
+  setActivePatient(patientId);
+}
+
+function handleHeaderPatientChange() {
+  const patientId = headerPatientSelectEl.value;
+  if (patientId === NEW_PATIENT_VALUE) {
+    renderPatientOptions(state.activePatientId || lastSelectedPatientId);
+    switchView("planView");
+    enterNewPatientMode();
+    setFeedback("请输入新患者姓名，创建后即可切换到新的患者档案。");
     return;
   }
 
@@ -444,7 +461,8 @@ function renderContentHeader(activePatient) {
   contentEyebrowEl.textContent = meta.eyebrow;
   contentTitleEl.textContent = meta.title;
   contentSubtitleEl.textContent = meta.subtitle;
-  activePatientNameEl.textContent = activePatient?.name || "未选择患者";
+  headerPatientSelectEl.value = activePatient?.id || NEW_PATIENT_VALUE;
+  contentHeaderEl.classList.toggle("content-header--home", currentViewId === "homeView");
 }
 
 function getViewMeta(viewId, activePatient) {
@@ -1716,45 +1734,51 @@ function renderMedicationList() {
   }
 
   medicationListEl.className = "medication-list";
-  activePatient.medications
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
-    .forEach((item) => {
-      const node = medicationCardTemplate.content.firstElementChild.cloneNode(true);
-      const remainingStock = computeRemainingStock(item);
-      const condition = item.condition || activePatient.condition || "未分类";
+  const groups = groupByCondition(activePatient.medications);
+  groups.forEach(([condition, items]) => {
+    const groupNode = createConditionGroup(condition);
 
-      node.querySelector("h3").textContent = item.name;
-      node.querySelector(".med-card__purpose").textContent = item.purpose || "未填写用途";
-      node.querySelector(".med-card__details").innerHTML = `
-        <div>慢病类型：${escapeHtml(condition)}</div>
-        <div>剂量：${escapeHtml(`${item.dosePerTake}${item.doseUnit} / 次，${item.frequencyPerDay} 次/天`)}</div>
-        <div>提醒时间：${escapeHtml(item.scheduleTimes.join("、"))}</div>
-        <div>开始日期：${escapeHtml(formatDateText(item.startDate))}，当前余量：${escapeHtml(`${remainingStock}${item.doseUnit}`)}</div>
-        <div>上次复诊：${escapeHtml(formatDateText(item.lastVisitDate))}，复诊周期：${escapeHtml(`${item.followupCycleDays} 天`)}</div>
-        <div>备注：${escapeHtml(item.note || "暂无")}</div>
-      `;
+    items
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
+      .forEach((item) => {
+        const node = medicationCardTemplate.content.firstElementChild.cloneNode(true);
+        const remainingStock = computeRemainingStock(item);
 
-      node.querySelector(".danger-link").addEventListener("click", () => {
-        if (!window.confirm(`确定删除 ${item.name} 吗？`)) {
-          return;
-        }
+        node.querySelector("h3").textContent = item.name;
+        node.querySelector(".med-card__purpose").textContent = item.purpose || "未填写用途";
+        node.querySelector(".med-card__details").innerHTML = `
+          <div>所属疾病：${escapeHtml(item.condition || condition)}</div>
+          <div>剂量：${escapeHtml(`${item.dosePerTake}${item.doseUnit} / 次，${item.frequencyPerDay} 次/天`)}</div>
+          <div>提醒时间：${escapeHtml(item.scheduleTimes.join("、"))}</div>
+          <div>开始日期：${escapeHtml(formatDateText(item.startDate))}，当前余量：${escapeHtml(`${remainingStock}${item.doseUnit}`)}</div>
+          <div>上次复诊：${escapeHtml(formatDateText(item.lastVisitDate))}，复诊周期：${escapeHtml(`${item.followupCycleDays} 天`)}</div>
+          <div>备注：${escapeHtml(item.note || "暂无")}</div>
+        `;
 
-        activePatient.medications = activePatient.medications.filter((med) => med.id !== item.id);
-        Object.keys(activePatient.reminders).forEach((dateKey) => {
-          Object.keys(activePatient.reminders[dateKey] || {}).forEach((key) => {
-            if (key.startsWith(`${item.id}_`)) {
-              delete activePatient.reminders[dateKey][key];
-            }
+        node.querySelector(".danger-link").addEventListener("click", () => {
+          if (!window.confirm(`确定删除 ${item.name} 吗？`)) {
+            return;
+          }
+
+          activePatient.medications = activePatient.medications.filter((med) => med.id !== item.id);
+          Object.keys(activePatient.reminders).forEach((dateKey) => {
+            Object.keys(activePatient.reminders[dateKey] || {}).forEach((key) => {
+              if (key.startsWith(`${item.id}_`)) {
+                delete activePatient.reminders[dateKey][key];
+              }
+            });
           });
+          saveState();
+          setFeedback(`${item.name} 已从计划中移除。`);
+          renderApp();
         });
-        saveState();
-        setFeedback(`${item.name} 已从计划中移除。`);
-        renderApp();
+
+        groupNode.querySelector(".condition-group__body").appendChild(node);
       });
 
-      medicationListEl.appendChild(node);
-    });
+    medicationListEl.appendChild(groupNode);
+  });
 }
 
 function renderStats() {

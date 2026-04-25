@@ -42,7 +42,7 @@
 
       <div class="page-content">
         <header class="content-header">
-          <div>
+          <div class="content-header__main">
             <p id="contentEyebrow" class="eyebrow">首页</p>
             <h2 id="contentTitle" class="content-header__title">首页</h2>
             <p id="contentSubtitle" class="content-header__subtitle">
@@ -51,7 +51,8 @@
           </div>
           <div class="content-header__meta">
             <span class="content-header__label">当前患者</span>
-            <strong id="activePatientName">未选择</strong>
+            <select id="headerPatientSelect" class="content-header__select" aria-label="选择当前患者"></select>
+            <p class="content-header__hint">切换后，提醒、库存、复诊和记录会同步更新。</p>
           </div>
         </header>
 
@@ -76,23 +77,6 @@
                   <button class="secondary-btn" type="button" data-view-target="reminderView">查看提醒与记录</button>
                 </div>
               </div>
-              <aside class="hero__panel home-panel">
-                <p class="hero__panel-label">网站可以做什么</p>
-                <div class="home-panel__list">
-                  <article>
-                    <strong>按患者切换管理</strong>
-                    <span>一个网站管理家里多位患者，不同患者看到各自的计划与记录。</span>
-                  </article>
-                  <article>
-                    <strong>建立长期用药计划</strong>
-                    <span>录入药品、剂量、提醒时间、库存和复诊周期，形成完整档案。</span>
-                  </article>
-                  <article>
-                    <strong>记录每日健康状态</strong>
-                    <span>可记录血压、血糖、复发情况和身体状态，便于连续观察。</span>
-                  </article>
-                </div>
-              </aside>
             </section>
 
             <section class="home-feature-grid">
