@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>慢病用药小管家</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <div class="workspace-shell">
+      <aside class="page-nav">
+        <div class="page-nav__panel">
+          <div class="page-brand">
+            <p class="page-nav__eyebrow">Chronic Care</p>
+            <h1>慢病用药小管家</h1>
+            <p>面向家庭多患者的慢病用药、复诊和每日健康记录网站。</p>
+          </div>
+
+          <div class="page-nav__group">
+            <p class="page-nav__group-title">首页</p>
+            <div class="page-nav__links">
+              <button class="page-nav__link" type="button" data-view-target="homeView">首页</button>
+            </div>
+          </div>
+
+          <div class="page-nav__group">
+            <p class="page-nav__group-title">核心功能</p>
+            <div class="page-nav__links">
+              <button class="page-nav__link" type="button" data-view-target="planView">创建计划</button>
+              <button class="page-nav__link" type="button" data-view-target="reminderView">提醒与记录</button>
+              <button class="page-nav__link" type="button" data-view-target="stockView">库存提醒</button>
+              <button class="page-nav__link" type="button" data-view-target="followupView">复诊提醒</button>
+              <button class="page-nav__link" type="button" data-view-target="medicationView">用药计划</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="page-content">
+        <header class="content-header">
+          <div>
+            <p id="contentEyebrow" class="eyebrow">首页</p>
+            <h2 id="contentTitle" class="content-header__title">首页</h2>
+            <p id="contentSubtitle" class="content-header__subtitle">
+              从首页进入各个功能界面，按患者维度管理日常用药、复诊和健康记录。
+            </p>
+          </div>
+          <div class="content-header__meta">
+            <span class="content-header__label">当前患者</span>
+            <strong id="activePatientName">未选择</strong>
+          </div>
+        </header>
+
+        <main class="app-stage">
+          <section id="homeView" class="app-view app-view--active" data-view-panel>
+            <section class="hero home-hero">
+              <div class="hero__copy">
+                <p class="eyebrow">首页</p>
+                <h1>一个面向家庭慢病管理的用药网站</h1>
+                <p class="hero__lead">
+                  慢病用药小管家帮助家庭主妇或照护者统一管理家里多位患者的用药计划、服药提醒、
+                  库存续购、复诊节点与每日健康记录，减少来回翻找和遗漏。
+                </p>
+                <div class="hero__chips">
+                  <span>多患者档案</span>
+                  <span>提醒与记录</span>
+                  <span>库存与复诊</span>
+                  <span>家庭协同管理</span>
+                </div>
+                <div class="form-actions home-actions">
+                  <button class="primary-btn" type="button" data-view-target="planView">开始创建计划</button>
+                  <button class="secondary-btn" type="button" data-view-target="reminderView">查看提醒与记录</button>
+                </div>
+              </div>
+              <aside class="hero__panel home-panel">
+                <p class="hero__panel-label">网站可以做什么</p>
+                <div class="home-panel__list">
+                  <article>
+                    <strong>按患者切换管理</strong>
+                    <span>一个网站管理家里多位患者，不同患者看到各自的计划与记录。</span>
+                  </article>
+                  <article>
+                    <strong>建立长期用药计划</strong>
+                    <span>录入药品、剂量、提醒时间、库存和复诊周期，形成完整档案。</span>
+                  </article>
+                  <article>
+                    <strong>记录每日健康状态</strong>
+                    <span>可记录血压、血糖、复发情况和身体状态，便于连续观察。</span>
+                  </article>
+                </div>
+              </aside>
+            </section>
+
+            <section class="home-feature-grid">
+              <article class="card home-feature-card">
+                <p class="section-kicker">01</p>
+                <h3>首页</h3>
+                <p>快速了解网站用途、核心功能和使用路径，适合作为家庭用药管理入口。</p>
+              </article>
+              <article class="card home-feature-card">
+                <p class="section-kicker">02</p>
+                <h3>创建计划</h3>
+                <p>支持拍照识别建档，也支持手动为不同患者创建长期用药方案。</p>
+              </article>
+              <article class="card home-feature-card">
+                <p class="section-kicker">03</p>
+                <h3>提醒与记录</h3>
+                <p>查看今日待完成服药任务，并同步记录血压、血糖和身体状况。</p>
+              </article>
+              <article class="card home-feature-card">
+                <p class="section-kicker">04</p>
+                <h3>库存与复诊</h3>
+                <p>自动估算药量余量与下一次复诊时间，帮助家庭管理更从容。</p>
+              </article>
+            </section>
+          </section>
+
+          <section id="planView" class="app-view" data-view-panel>
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Plan Builder</p>
+                  <h2>创建个人用药计划</h2>
+                </div>
+                <button id="seedDemoBtn" class="ghost-btn" type="button">加载演示数据</button>
+              </div>
+
+              <div class="entry-grid">
+                <aside class="assist-panel">
+                  <div class="assist-panel__head">
+                    <h3>拍处方 / 拍药盒，自动识别建档</h3>
+                    <p>上传处方图或药盒照片，先让系统帮你预填药品信息，再手动核对保存。</p>
+                  </div>
+
+                  <label class="upload-drop" for="sourceImage">
+                    <input id="sourceImage" type="file" accept="image/*">
+                    <strong>点击上传图片</strong>
+                    <span id="sourceImageName">支持处方照片、药盒照片、截图</span>
+                  </label>
+
+                  <div class="field-row field-row--double">
+                    <label>
+                      <span>识别来源</span>
+                      <select id="sourceType">
+                        <option value="prescription">处方图片</option>
+                        <option value="medicine_box">药盒图片</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>建档方式</span>
+                      <select id="recognitionMode">
+                        <option value="smart">AI 自动识别</option>
+                        <option value="template">快速模板填充</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="recognizeBtn" class="primary-btn" type="button">识别并填充表单</button>
+                    <button id="clearRecognitionBtn" class="secondary-btn" type="button">清空识别结果</button>
+                  </div>
+
+                  <div id="recognitionResult" class="recognition-result empty-state">
+                    还没有识别结果。上传图片后，这里会显示识别到的药品名称、剂量、频次和提醒时间建议。
+                  </div>
+                </aside>
+
+                <section class="form-panel">
+                  <form id="medicationForm" class="plan-form">
+                    <div class="field-row field-row--double">
+                      <label>
+                        <span>患者档案</span>
+                        <div class="condition-entry">
+                          <select id="patientSelect"></select>
+                          <input type="text" id="newPatientName" class="condition-entry__input" placeholder="请输入新患者姓名，例如：王阿姨" maxlength="20" hidden disabled>
+                        </div>
+                      </label>
+                      <label>
+                        <span>慢病类型</span>
+                        <div class="condition-entry">
+                          <select id="conditionSelect">
+                            <option value="高血压">高血压</option>
+                            <option value="2型糖尿病">2型糖尿病</option>
+                            <option value="高脂血症">高脂血症</option>
+                            <option value="冠心病">冠心病</option>
+                            <option value="慢阻肺">慢阻肺</option>
+                            <option value="慢性肾病">慢性肾病</option>
+                            <option value="甲状腺疾病">甲状腺疾病</option>
+                            <option value="其他">其他</option>
+                          </select>
+                          <input type="text" id="customCondition" class="condition-entry__input" placeholder="请输入疾病名称，例如：痛风 / 类风湿" hidden disabled>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div class="field-row field-row--double">
+                      <label>
+                        <span>药品名称</span>
+                        <input type="text" id="medName" required placeholder="例如：缬沙坦胶囊">
+                      </label>
+                      <label>
+                        <span>用途 / 适应症</span>
+                        <input type="text" id="medPurpose" placeholder="例如：降压">
+                      </label>
+                    </div>
+
+                    <div class="field-row field-row--triple">
+                      <label>
+                        <span>单次剂量</span>
+                        <input type="number" id="dosePerTake" min="1" step="1" value="1" required>
+                      </label>
+                      <label>
+                        <span>剂量单位</span>
+                        <select id="doseUnit">
+                          <option value="片">片</option>
+                          <option value="粒">粒</option>
+                          <option value="袋">袋</option>
+                          <option value="支">支</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>每日频次</span>
+                        <select id="frequencyPerDay">
+                          <option value="1">1 次 / 天</option>
+                          <option value="2" selected>2 次 / 天</option>
+                          <option value="3">3 次 / 天</option>
+                          <option value="4">4 次 / 天</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <div class="schedule-editor">
+                      <div class="schedule-editor__head">
+                        <div>
+                          <strong>每次提醒时间</strong>
+                          <p>频次确定后，分别设置每天几点提醒服药。</p>
+                        </div>
+                      </div>
+                      <div id="scheduleTimeGroup" class="schedule-time-grid"></div>
+                    </div>
+
+                    <div class="field-row field-row--triple">
+                      <label>
+                        <span>开始用药日期</span>
+                        <input type="date" id="startDate" required>
+                      </label>
+                      <label>
+                        <span>当前库存总量</span>
+                        <input type="number" id="stockTotal" min="1" step="1" value="60" required>
+                      </label>
+                      <label>
+                        <span>补货提醒阈值（天）</span>
+                        <input type="number" id="refillThresholdDays" min="1" max="30" value="7" required>
+                      </label>
+                    </div>
+
+                    <div class="field-row field-row--double">
+                      <label>
+                        <span>上次复诊日期</span>
+                        <input type="date" id="lastVisitDate" required>
+                      </label>
+                      <label>
+                        <span>复诊周期（天）</span>
+                        <input type="number" id="followupCycleDays" min="7" step="1" value="30" required>
+                      </label>
+                    </div>
+
+                    <label>
+                      <span>备注</span>
+                      <textarea id="medNote" rows="3" placeholder="例如：早餐后服用，注意监测血压"></textarea>
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="primary-btn" type="submit">加入用药计划</button>
+                      <button class="secondary-btn" type="reset">清空表单</button>
+                    </div>
+                  </form>
+                </section>
+              </div>
+
+              <div id="feedbackBar" class="feedback-bar" hidden></div>
+            </section>
+          </section>
+
+          <section id="reminderView" class="app-view" data-view-panel>
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Today Overview</p>
+                  <h2>今日总览</h2>
+                </div>
+                <span id="todayDateLabel" class="section-meta"></span>
+              </div>
+
+              <div class="summary-grid">
+                <article class="summary-card">
+                  <strong id="statPendingCount">0</strong>
+                  <span>待完成提醒</span>
+                </article>
+                <article class="summary-card">
+                  <strong id="statLowStock">0</strong>
+                  <span>低库存药品</span>
+                </article>
+                <article class="summary-card">
+                  <strong id="statFollowup">-</strong>
+                  <span>最近复诊节点</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Medication Reminder</p>
+                  <h2>今日服药提醒</h2>
+                </div>
+              </div>
+
+              <div class="reminder-split">
+                <section class="reminder-column">
+                  <div class="reminder-column__head">
+                    <h3>待完成</h3>
+                    <span id="pendingCountLabel" class="section-meta">0 项</span>
+                  </div>
+                  <div id="pendingTimeline" class="timeline empty-state">
+                    还没有待完成提醒。
+                  </div>
+                </section>
+
+                <section class="reminder-column">
+                  <div class="reminder-column__head">
+                    <h3>已完成</h3>
+                    <span id="completedCountLabel" class="section-meta">0 项</span>
+                  </div>
+                  <div id="completedTimeline" class="timeline empty-state">
+                    今天还没有完成记录。
+                  </div>
+                </section>
+              </div>
+            </section>
+
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Daily Log</p>
+                  <h2>今日健康记录</h2>
+                </div>
+                <span id="healthLogDateLabel" class="section-meta"></span>
+              </div>
+
+              <div class="health-log-layout">
+                <section class="health-log-panel">
+                  <form id="healthLogForm" class="health-log-form">
+                    <div class="field-row field-row--double">
+                      <label>
+                        <span>今日血压</span>
+                        <div class="metric-input-row">
+                          <input type="number" id="bpSystolic" min="40" max="260" step="1" placeholder="收缩压">
+                          <span>/</span>
+                          <input type="number" id="bpDiastolic" min="30" max="180" step="1" placeholder="舒张压">
+                        </div>
+                        <small class="field-hint">单位 mmHg，录入后自动标注偏低 / 正常 / 偏高。</small>
+                      </label>
+
+                      <label>
+                        <span>今日血糖</span>
+                        <div class="metric-split">
+                          <input type="number" id="bloodSugarValue" min="0" max="600" step="0.1" placeholder="请输入数值">
+                          <select id="bloodSugarUnit">
+                            <option value="mmol">mmol/L</option>
+                            <option value="mg">mg/dL</option>
+                          </select>
+                        </div>
+                        <select id="bloodSugarTiming">
+                          <option value="fasting">空腹 / 餐前</option>
+                          <option value="postmeal">餐后 2 小时</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <div class="field-row field-row--double">
+                      <label>
+                        <span>是否复发</span>
+                        <select id="relapseStatus">
+                          <option value="">未记录</option>
+                          <option value="none">无复发</option>
+                          <option value="fluctuating">有波动</option>
+                          <option value="relapse">有复发</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>今日身体状况</span>
+                        <select id="bodyConditionStatus">
+                          <option value="">未记录</option>
+                          <option value="good">状态良好</option>
+                          <option value="stable">整体平稳</option>
+                          <option value="average">一般</option>
+                          <option value="unwell">有些不适</option>
+                          <option value="worse">状态欠佳</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <label>
+                      <span>补充记录</span>
+                      <textarea id="healthConditionNote" rows="3" placeholder="例如：上午血压偏高，午后恢复；晚饭后血糖略高，已按时服药。"></textarea>
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="primary-btn" type="submit">保存今日记录</button>
+                      <button class="secondary-btn" type="reset">清空今日记录</button>
+                    </div>
+                  </form>
+                </section>
+
+                <aside id="healthLogSummary" class="health-log-summary empty-state">
+                  还没有今日健康记录。录入血压、血糖、是否复发和身体状况后，这里会自动汇总状态。
+                </aside>
+              </div>
+            </section>
+          </section>
+
+          <section id="stockView" class="app-view" data-view-panel>
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Inventory</p>
+                  <h2>药量余量与续购提醒</h2>
+                </div>
+              </div>
+              <div id="stockBoard" class="board-grid empty-state">
+                添加用药计划后，这里会自动估算剩余天数与断药风险。
+              </div>
+            </section>
+          </section>
+
+          <section id="followupView" class="app-view" data-view-panel>
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Follow-up</p>
+                  <h2>复诊与续方提醒</h2>
+                </div>
+              </div>
+              <div id="followupBoard" class="followup-list empty-state">
+                暂无复诊计划。
+              </div>
+            </section>
+          </section>
+
+          <section id="medicationView" class="app-view" data-view-panel>
+            <section class="card card--wide">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Plan</p>
+                  <h2 id="medicationPlanTitle">患者用药计划</h2>
+                </div>
+              </div>
+              <div id="medicationList" class="medication-list empty-state">
+                还没有药品记录。
+              </div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <template id="timelineItemTemplate">
+    <article class="timeline-item">
+      <div class="timeline-item__time"></div>
+      <div class="timeline-item__body">
+        <div class="timeline-item__header">
+          <div>
+            <h3></h3>
+            <p class="timeline-item__meta"></p>
+          </div>
+          <span class="pill"></span>
+        </div>
+        <div class="timeline-item__actions"></div>
+      </div>
+    </article>
+  </template>
+
+  <template id="stockCardTemplate">
+    <article class="stock-card">
+      <div class="stock-card__header">
+        <h3></h3>
+        <span class="pill"></span>
+      </div>
+      <p class="stock-card__desc"></p>
+      <div class="stock-card__meter">
+        <div class="stock-card__meter-fill"></div>
+      </div>
+      <div class="stock-card__footer"></div>
+    </article>
+  </template>
+
+  <template id="followupCardTemplate">
+    <article class="followup-card">
+      <div>
+        <h3></h3>
+        <p class="followup-card__meta"></p>
+      </div>
+      <div class="followup-card__side"></div>
+    </article>
+  </template>
+
+  <template id="medicationCardTemplate">
+    <article class="med-card">
+      <div class="med-card__header">
+        <div>
+          <h3></h3>
+          <p class="med-card__purpose"></p>
+        </div>
+        <button class="danger-link" type="button">删除</button>
+      </div>
+      <div class="med-card__details"></div>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
