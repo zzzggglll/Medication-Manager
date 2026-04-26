@@ -594,9 +594,20 @@ function normalizeHealthLog(log = {}) {
     bloodSugarTiming: log.bloodSugarTiming === "postmeal" ? "postmeal" : "fasting",
     relapseStatus: (log.relapseStatus || "").trim(),
     bodyConditionStatus: (log.bodyConditionStatus || "").trim(),
-    note: (log.note || "").trim(),
+    note: repairKnownHealthLogNote((log.note || "").trim()),
     updatedAt: log.updatedAt || "",
   };
+}
+
+function repairKnownHealthLogNote(note) {
+  const replacements = new Map([
+    ["鏃╀笂鏁板€肩◢楂橈紝涓嬪崍宸插洖绋炽€?", "早上数值稍高，下午已回稳。"],
+    ["椁愬悗琛€绯栧洖钀斤紝渚夸簬婕旂ず鍗曚綅鎹㈢畻銆?", "餐后血糖回落，便于演示单位换算。"],
+    ["浠婂ぉ鏈夎交寰尝鍔紝宸插姞寮鸿瀵熴€?", "今天有轻微波动，已加强观察。"],
+    ["杩戜袱澶╄秼浜庣ǔ瀹氾紝鍙洿鎺ュ睍绀鸿秼鍔垮浘銆?", "近两天趋于稳定，可直接展示趋势图。"],
+  ]);
+
+  return replacements.get(note) || note;
 }
 
 function toNumberOrBlank(value) {
@@ -1141,13 +1152,13 @@ function seedDemoData() {
 
 function buildDemoHealthLogs() {
   const samples = [
-    { offset: -6, systolic: 138, diastolic: 88, sugar: 7.4, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "鏃╀笂鏁板€肩◢楂橈紝涓嬪崍宸插洖绋炽€?" },
+    { offset: -6, systolic: 138, diastolic: 88, sugar: 7.4, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "早上数值稍高，下午已回稳。" },
     { offset: -5, systolic: 134, diastolic: 86, sugar: 7.1, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "" },
-    { offset: -4, systolic: 129, diastolic: 82, sugar: 122, unit: "mg", timing: "postmeal", relapse: "none", body: "good", note: "椁愬悗琛€绯栧洖钀斤紝渚夸簬婕旂ず鍗曚綅鎹㈢畻銆?" },
+    { offset: -4, systolic: 129, diastolic: 82, sugar: 122, unit: "mg", timing: "postmeal", relapse: "none", body: "good", note: "餐后血糖回落，便于演示单位换算。" },
     { offset: -3, systolic: 126, diastolic: 80, sugar: 6.6, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "" },
-    { offset: -2, systolic: 131, diastolic: 83, sugar: 6.9, unit: "mmol", timing: "postmeal", relapse: "fluctuating", body: "average", note: "浠婂ぉ鏈夎交寰尝鍔紝宸插姞寮鸿瀵熴€?" },
+    { offset: -2, systolic: 131, diastolic: 83, sugar: 6.9, unit: "mmol", timing: "postmeal", relapse: "fluctuating", body: "average", note: "今天有轻微波动，已加强观察。" },
     { offset: -1, systolic: 127, diastolic: 79, sugar: 6.4, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "" },
-    { offset: 0, systolic: 124, diastolic: 78, sugar: 6.2, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "杩戜袱澶╄秼浜庣ǔ瀹氾紝鍙洿鎺ュ睍绀鸿秼鍔垮浘銆?" },
+    { offset: 0, systolic: 124, diastolic: 78, sugar: 6.2, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "近两天趋于稳定，可直接展示趋势图。" },
   ];
 
   return Object.fromEntries(
