@@ -234,18 +234,19 @@ select {
 
 .content-header__controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
   width: 100%;
   align-items: center;
 }
 
 .content-header__controls .content-header__select {
-  flex: 1 1 220px;
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .content-header__demo-btn {
-  flex: 0 0 auto;
+  flex: 0 0 150px;
   min-height: 56px;
   white-space: nowrap;
 }
@@ -729,6 +730,16 @@ select:focus {
 .mini-btn:hover,
 .danger-link:hover {
   transform: translateY(-1px);
+}
+
+.primary-btn:disabled,
+.secondary-btn:disabled,
+.ghost-btn:disabled,
+.mini-btn:disabled,
+.danger-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .reminder-split {

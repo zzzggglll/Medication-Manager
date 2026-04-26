@@ -1,9 +1,10 @@
 const STORAGE_KEY = "chronic_medication_guardian_v2";
-const STATUS_DELAY_MINUTES = 30;
+const STATUS_DELAY_MINUTES = 20;
 const MEITUAN_MEDICINE_ENTRY_URL = "https://i.meituan.com/peisong/paotui";
 
 const medicationForm = document.getElementById("medicationForm");
 const seedDemoBtn = document.getElementById("seedDemoBtn");
+const clearDataBtn = document.getElementById("clearDataBtn");
 const sourceImageInput = document.getElementById("sourceImage");
 const sourceImageNameEl = document.getElementById("sourceImageName");
 const sourceTypeSelect = document.getElementById("sourceType");
@@ -118,6 +119,7 @@ function attachEvents() {
   medicationForm.addEventListener("submit", handleAddMedication);
   medicationForm.addEventListener("reset", handleMedicationFormReset);
   seedDemoBtn.addEventListener("click", seedDemoData);
+  clearDataBtn.addEventListener("click", clearCurrentPatientData);
   patientSelectEl.addEventListener("change", handlePatientChange);
   headerPatientSelectEl.addEventListener("change", handleHeaderPatientChange);
   newPatientNameEl.addEventListener("blur", confirmNewPatient);
@@ -544,6 +546,8 @@ function renderContentHeader(activePatient) {
   contentSubtitleEl.textContent = meta.subtitle;
   headerPatientSelectEl.value = activePatient?.id || NEW_PATIENT_VALUE;
   seedDemoBtn.hidden = currentViewId !== "homeView";
+  clearDataBtn.hidden = currentViewId !== "homeView";
+  clearDataBtn.disabled = !hasClearablePatientData(activePatient);
   contentHeaderEl.classList.toggle("content-header--home", currentViewId === "homeView");
 }
 
@@ -1128,6 +1132,49 @@ function seedDemoData() {
   renderApp();
 }
 
+function clearCurrentPatientData() {
+  const activePatient = getActivePatient();
+  if (!activePatient) {
+    setFeedback("请先选择或新建患者档案。");
+    return;
+  }
+
+  if (!hasClearablePatientData(activePatient)) {
+    setFeedback(`${activePatient.name} 当前没有可清空的数据。`);
+    return;
+  }
+
+  if (!window.confirm(`确定清空 ${activePatient.name} 当前的用药计划、提醒和健康记录吗？`)) {
+    return;
+  }
+
+  activePatient.condition = "";
+  activePatient.customConditions = [];
+  activePatient.medications = [];
+  activePatient.reminders = {};
+  activePatient.healthLogs = {};
+
+  clearMedicationEditingState();
+  saveState();
+  resetMedicationPlannerForm();
+  setFeedback(`${activePatient.name} 的当前数据已清空。`);
+  renderApp();
+}
+
+function hasClearablePatientData(patient) {
+  if (!patient) {
+    return false;
+  }
+
+  return Boolean(
+    patient.condition ||
+    (patient.customConditions || []).length ||
+    (patient.medications || []).length ||
+    Object.keys(patient.reminders || {}).length ||
+    Object.keys(patient.healthLogs || {}).length
+  );
+}
+
 function renderApp() {
   const activePatient = getActivePatient();
   todayDateLabelEl.textContent = formatHumanDate(new Date());
@@ -1522,9 +1569,19 @@ function renderPendingAndCompletedTimelines() {
     return;
   }
 
-  const entries = buildTodayEntries();
-  const pendingEntries = entries.filter((entry) => getReminderStatus(reminderKey(entry.medication.id, entry.time)) !== "done");
-  const completedEntries = entries.filter((entry) => getReminderStatus(reminderKey(entry.medication.id, entry.time)) === "done");
+  const entries = buildTodayEntries().map((entry) => {
+    const key = reminderKey(entry.medication.id, entry.time);
+    const status = getReminderStatus(key);
+
+    return {
+      ...entry,
+      reminderKey: key,
+      status,
+      displayTime: getReminderDisplayTime(entry, status),
+    };
+  });
+  const pendingEntries = entries.filter((entry) => entry.status !== "done");
+  const completedEntries = entries.filter((entry) => entry.status === "done");
 
   pendingCountLabelEl.textContent = `${pendingEntries.length} 项`;
   completedCountLabelEl.textContent = `${completedEntries.length} 项`;
@@ -1536,15 +1593,15 @@ function renderPendingAndCompletedTimelines() {
     (actionsEl, entry) => {
       const doneBtn = createMiniButton("已服药", "mini-btn mini-btn--done");
       doneBtn.addEventListener("click", () => {
-        setReminderStatus(reminderKey(entry.medication.id, entry.time), "done");
-        setFeedback(`已记录 ${entry.medication.name} 在 ${entry.time} 的服药完成情况。`);
+        setReminderStatus(entry.reminderKey, "done");
+        setFeedback(`已记录 ${entry.medication.name} 在 ${entry.displayTime} 的服药完成情况。`);
         renderApp();
       });
 
       const laterBtn = createMiniButton("稍后提醒", "mini-btn mini-btn--ghost");
       laterBtn.addEventListener("click", () => {
-        setReminderStatus(reminderKey(entry.medication.id, entry.time), "later");
-        setFeedback(`已将 ${entry.medication.name} 设置为稍后 ${STATUS_DELAY_MINUTES} 分钟提醒。`);
+        const delayedUntil = scheduleLaterReminder(entry);
+        setFeedback(`已将 ${entry.medication.name} 顺延到 ${delayedUntil} 提醒。`);
         renderApp();
       });
 
@@ -1559,7 +1616,7 @@ function renderPendingAndCompletedTimelines() {
     (actionsEl, entry) => {
       const undoBtn = createMiniButton("撤销完成", "mini-btn mini-btn--undo");
       undoBtn.addEventListener("click", () => {
-        setReminderStatus(reminderKey(entry.medication.id, entry.time), "pending");
+        setReminderStatus(entry.reminderKey, "pending");
         setFeedback(`已将 ${entry.medication.name} 的记录恢复为待完成。`);
         renderApp();
       });
@@ -1579,19 +1636,21 @@ function renderTimelineGroup(container, entries, emptyText, bindActions) {
 
   container.className = "timeline";
   entries
-    .sort((a, b) => a.time.localeCompare(b.time))
+    .sort((a, b) => a.displayTime.localeCompare(b.displayTime) || a.time.localeCompare(b.time))
     .forEach((entry) => {
       const node = timelineItemTemplate.content.firstElementChild.cloneNode(true);
-      const status = getReminderStatus(reminderKey(entry.medication.id, entry.time));
       const pill = node.querySelector(".pill");
       const actionsEl = node.querySelector(".timeline-item__actions");
+      const delayMeta = entry.status === "later" && entry.displayTime !== entry.time
+        ? ` · 已顺延自 ${entry.time}`
+        : "";
 
-      node.querySelector(".timeline-item__time").textContent = entry.time;
+      node.querySelector(".timeline-item__time").textContent = entry.displayTime;
       node.querySelector("h3").textContent = entry.medication.name;
-      node.querySelector(".timeline-item__meta").textContent = `${entry.medication.dosePerTake}${entry.medication.doseUnit} / 次 · ${entry.medication.purpose || "长期管理"} · 库存约 ${computeRemainingStock(entry.medication)}${entry.medication.doseUnit}`;
-      pill.textContent = statusToLabel(status);
-      pill.className = `pill ${statusToClass(status)}`.trim();
-      node.classList.toggle("timeline-item--done", status === "done");
+      node.querySelector(".timeline-item__meta").textContent = `${entry.medication.dosePerTake}${entry.medication.doseUnit} / 次 · ${entry.medication.purpose || "长期管理"}${delayMeta} · 库存约 ${computeRemainingStock(entry.medication)}${entry.medication.doseUnit}`;
+      pill.textContent = statusToLabel(entry.status);
+      pill.className = `pill ${statusToClass(entry.status)}`.trim();
+      node.classList.toggle("timeline-item--done", entry.status === "done");
 
       bindActions(actionsEl, entry);
       container.appendChild(node);
@@ -2020,12 +2079,35 @@ function pruneReminderEntriesForMedication(activePatient, medicationId, validTim
 }
 
 function getReminderStatus(key) {
-  const activePatient = getActivePatient();
-  const today = activePatient?.reminders[getTodayKey()] || {};
-  return today[key] || "pending";
+  return getReminderRecord(key).status;
 }
 
-function setReminderStatus(key, status) {
+function getReminderRecord(key) {
+  const activePatient = getActivePatient();
+  const today = activePatient?.reminders[getTodayKey()] || {};
+  const rawValue = today[key];
+
+  if (!rawValue) {
+    return {
+      status: "pending",
+      delayedUntil: "",
+    };
+  }
+
+  if (typeof rawValue === "string") {
+    return {
+      status: rawValue,
+      delayedUntil: "",
+    };
+  }
+
+  return {
+    status: rawValue.status || "pending",
+    delayedUntil: rawValue.delayedUntil || "",
+  };
+}
+
+function setReminderStatus(key, status, options = {}) {
   const activePatient = getActivePatient();
   if (!activePatient) {
     return;
@@ -2033,8 +2115,41 @@ function setReminderStatus(key, status) {
 
   const today = getTodayKey();
   activePatient.reminders[today] = activePatient.reminders[today] || {};
-  activePatient.reminders[today][key] = status;
+  activePatient.reminders[today][key] = status === "later"
+    ? {
+        status,
+        delayedUntil: options.delayedUntil || "",
+      }
+    : status;
   saveState();
+}
+
+function getReminderDisplayTime(entry, status = getReminderStatus(reminderKey(entry.medication.id, entry.time))) {
+  if (status !== "later") {
+    return entry.time;
+  }
+
+  return getReminderRecord(reminderKey(entry.medication.id, entry.time)).delayedUntil || entry.time;
+}
+
+function scheduleLaterReminder(entry) {
+  const reminderRecord = getReminderRecord(entry.reminderKey);
+  const baseTime = resolveReminderDelayBase(entry.time, reminderRecord.delayedUntil);
+  const delayedUntil = formatClockTime(addMinutes(baseTime, STATUS_DELAY_MINUTES));
+
+  setReminderStatus(entry.reminderKey, "later", { delayedUntil });
+  return delayedUntil;
+}
+
+function resolveReminderDelayBase(originalTime, delayedUntil) {
+  const now = new Date();
+  const candidateTimes = [now, parseTodayClockTime(originalTime)];
+
+  if (delayedUntil) {
+    candidateTimes.push(parseTodayClockTime(delayedUntil));
+  }
+
+  return candidateTimes.reduce((latest, current) => (current > latest ? current : latest));
 }
 
 function reminderKey(medicationId, time) {
@@ -2089,6 +2204,19 @@ function formatTimeText(value) {
   }).format(new Date(value));
 }
 
+function formatClockTime(date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function parseTodayClockTime(value) {
+  const [hours, minutes] = String(value).split(":").map(Number);
+  const next = new Date();
+  next.setHours(hours || 0, minutes || 0, 0, 0);
+  return next;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -2133,6 +2261,12 @@ function formatDateText(value) {
 function addDays(date, count) {
   const next = new Date(date);
   next.setDate(next.getDate() + count);
+  return next;
+}
+
+function addMinutes(date, count) {
+  const next = new Date(date);
+  next.setMinutes(next.getMinutes() + count);
   return next;
 }
 
