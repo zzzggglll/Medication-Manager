@@ -694,6 +694,10 @@ select:focus {
   gap: 10px;
 }
 
+.assist-panel .form-actions {
+  margin-top: 14px;
+}
+
 .primary-btn,
 .secondary-btn,
 .ghost-btn,
