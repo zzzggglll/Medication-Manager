@@ -1045,6 +1045,152 @@ select:focus {
   line-height: 1.6;
 }
 
+.health-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.health-trend-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(20, 53, 44, 0.1);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 248, 0.92));
+}
+
+.health-trend-card.empty-state {
+  display: flex;
+  align-items: center;
+}
+
+.health-trend-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.health-trend-card__head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.health-trend-card__subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.health-trend-card__meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(31, 143, 116, 0.1);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.health-trend-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.health-trend-stat {
+  display: grid;
+  gap: 4px;
+  min-width: 120px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(20, 53, 44, 0.08);
+}
+
+.health-trend-stat strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.health-trend-stat span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.health-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.health-trend-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.health-trend-legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.health-trend-chart {
+  padding: 10px 12px 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(20, 53, 44, 0.08);
+}
+
+.health-trend-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.health-trend-chart__grid {
+  stroke: rgba(20, 53, 44, 0.1);
+  stroke-width: 1;
+}
+
+.health-trend-chart__axis {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.health-trend-chart__range {
+  fill: rgba(20, 53, 44, 0.68);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.health-trend-chart__line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.health-trend-chart__point {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.health-trend-chart__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  text-align: center;
+}
+
 .stock-card__meter {
   margin: 12px 0 10px;
   width: 100%;
@@ -1244,6 +1390,7 @@ select:focus {
   .schedule-time-grid,
   .metric-split,
   .board-grid,
+  .health-trend-grid,
   .health-stat-grid,
   .condition-group__body--grid {
     grid-template-columns: 1fr;
@@ -1257,7 +1404,8 @@ select:focus {
   .form-actions,
   .timeline-item__actions,
   .reminder-column__head,
-  .health-log-summary__head {
+  .health-log-summary__head,
+  .health-trend-card__head {
     flex-direction: column;
     align-items: flex-start;
   }

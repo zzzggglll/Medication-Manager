@@ -32,6 +32,7 @@ const pendingTimelineEl = document.getElementById("pendingTimeline");
 const completedTimelineEl = document.getElementById("completedTimeline");
 const healthLogForm = document.getElementById("healthLogForm");
 const healthLogSummaryEl = document.getElementById("healthLogSummary");
+const healthTrendGridEl = document.getElementById("healthTrendGrid");
 const healthLogDateLabelEl = document.getElementById("healthLogDateLabel");
 const bpSystolicEl = document.getElementById("bpSystolic");
 const bpDiastolicEl = document.getElementById("bpDiastolic");
@@ -1126,10 +1127,46 @@ function seedDemoData() {
     activePatient.reminders[todayKey][reminderKey(item.id, item.scheduleTimes[0])] = "done";
   });
 
+  Object.entries(buildDemoHealthLogs()).forEach(([dateKey, log]) => {
+    if (!activePatient.healthLogs[dateKey]) {
+      activePatient.healthLogs[dateKey] = log;
+    }
+  });
+
   saveState();
   resetMedicationPlannerForm();
   setFeedback("演示数据已载入，其中包含一条库存告急药品，可到库存提醒里演示去美团买药。");
   renderApp();
+}
+
+function buildDemoHealthLogs() {
+  const samples = [
+    { offset: -6, systolic: 138, diastolic: 88, sugar: 7.4, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "鏃╀笂鏁板€肩◢楂橈紝涓嬪崍宸插洖绋炽€?" },
+    { offset: -5, systolic: 134, diastolic: 86, sugar: 7.1, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "" },
+    { offset: -4, systolic: 129, diastolic: 82, sugar: 122, unit: "mg", timing: "postmeal", relapse: "none", body: "good", note: "椁愬悗琛€绯栧洖钀斤紝渚夸簬婕旂ず鍗曚綅鎹㈢畻銆?" },
+    { offset: -3, systolic: 126, diastolic: 80, sugar: 6.6, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "" },
+    { offset: -2, systolic: 131, diastolic: 83, sugar: 6.9, unit: "mmol", timing: "postmeal", relapse: "fluctuating", body: "average", note: "浠婂ぉ鏈夎交寰尝鍔紝宸插姞寮鸿瀵熴€?" },
+    { offset: -1, systolic: 127, diastolic: 79, sugar: 6.4, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "" },
+    { offset: 0, systolic: 124, diastolic: 78, sugar: 6.2, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "杩戜袱澶╄秼浜庣ǔ瀹氾紝鍙洿鎺ュ睍绀鸿秼鍔垮浘銆?" },
+  ];
+
+  return Object.fromEntries(
+    samples.map((sample) => {
+      const date = addDays(new Date(), sample.offset);
+      const dateKey = formatDateInput(date);
+      return [dateKey, normalizeHealthLog({
+        bloodPressureSystolic: sample.systolic,
+        bloodPressureDiastolic: sample.diastolic,
+        bloodSugarValue: sample.sugar,
+        bloodSugarUnit: sample.unit,
+        bloodSugarTiming: sample.timing,
+        relapseStatus: sample.relapse,
+        bodyConditionStatus: sample.body,
+        note: sample.note,
+        updatedAt: date.toISOString(),
+      })];
+    })
+  );
 }
 
 function clearCurrentPatientData() {
@@ -1181,6 +1218,7 @@ function renderApp() {
   healthLogDateLabelEl.textContent = formatHumanDate(new Date());
   medicationPlanTitleEl.textContent = activePatient ? `${activePatient.name}的用药计划` : "患者用药计划";
   renderHealthLog();
+  renderHealthTrendCharts();
   renderPendingAndCompletedTimelines();
   renderStockBoard();
   renderFollowups();
@@ -1269,6 +1307,7 @@ function handleHealthLogSubmit(event) {
     delete activePatient.healthLogs[todayKey];
     saveState();
     renderHealthLogSummary(log);
+    renderHealthTrendCharts();
     setFeedback("今日健康记录已清空。");
     return;
   }
@@ -1279,6 +1318,7 @@ function handleHealthLogSubmit(event) {
   };
   saveState();
   renderHealthLogSummary(activePatient.healthLogs[todayKey]);
+  renderHealthTrendCharts();
   setFeedback("今日健康记录已保存。");
 }
 
@@ -1293,6 +1333,7 @@ function handleHealthLogReset() {
     const emptyLog = normalizeHealthLog();
     populateHealthLogForm(emptyLog);
     renderHealthLogSummary(emptyLog);
+    renderHealthTrendCharts();
     saveState();
     setFeedback("今日健康记录已清空。");
   }, 0);
@@ -1390,6 +1431,319 @@ function renderHealthStatCard({
       <div class="health-stat-card__meta">${escapeHtml(meta)}</div>
     </article>
   `;
+}
+
+function renderHealthTrendCharts() {
+  if (!healthTrendGridEl) {
+    return;
+  }
+
+  const activePatient = getActivePatient();
+  if (!activePatient) {
+    healthTrendGridEl.innerHTML = `
+      <article class="health-trend-card empty-state">
+        请先新建患者档案，再查看最近 7 天的血压和血糖趋势。
+      </article>
+    `;
+    return;
+  }
+
+  const rangeItems = getRecentHealthLogRange(7);
+  healthTrendGridEl.innerHTML = [
+    renderPressureTrendCard(rangeItems),
+    renderSugarTrendCard(rangeItems),
+  ].join("");
+}
+
+function getRecentHealthLogRange(days = 7) {
+  const activePatient = getActivePatient();
+  return Array.from({ length: days }, (_, index) => {
+    const date = addDays(new Date(), index - days + 1);
+    const dateKey = formatDateInput(date);
+    return {
+      date,
+      dateKey,
+      label: formatDateText(dateKey),
+      log: normalizeHealthLog(activePatient?.healthLogs[dateKey] || {}),
+    };
+  });
+}
+
+function renderPressureTrendCard(rangeItems) {
+  const systolicValues = rangeItems.map((item) => toTrendNumber(item.log.bloodPressureSystolic));
+  const diastolicValues = rangeItems.map((item) => toTrendNumber(item.log.bloodPressureDiastolic));
+  const latestItem = findLatestTrendItem(
+    rangeItems,
+    (item) => item.log.bloodPressureSystolic !== "" || item.log.bloodPressureDiastolic !== ""
+  );
+  const latestSummary = latestItem ? summarizeBloodPressure(latestItem.log) : summarizeBloodPressure(normalizeHealthLog());
+  const averageSystolic = averageTrendValues(systolicValues);
+  const averageDiastolic = averageTrendValues(diastolicValues);
+  const averageValue = averageSystolic === null && averageDiastolic === null
+    ? "待记录"
+    : `${averageSystolic === null ? "--" : formatTrendNumber(averageSystolic)} / ${averageDiastolic === null ? "--" : formatTrendNumber(averageDiastolic)} mmHg`;
+
+  return renderHealthTrendCard({
+    title: "血压趋势",
+    subtitle: "收缩压和舒张压按最近 7 天家庭记录展示，缺失日期会自动留空。",
+    meta: latestItem ? `最新 ${latestItem.label}` : "待记录",
+    stats: [
+      renderTrendStat("最新值", latestSummary.value),
+      renderTrendStat("7 日均值", averageValue),
+      renderTrendStat("最新状态", latestSummary.statusLabel),
+    ].join(""),
+    legend: renderTrendLegend([
+      { label: "收缩压", color: "#1f8f74" },
+      { label: "舒张压", color: "#ef8f45" },
+    ]),
+    chart: renderTrendSvg({
+      ariaLabel: "最近 7 天血压趋势图",
+      labels: rangeItems.map((item) => item.label),
+      series: [
+        { name: "收缩压", color: "#1f8f74", values: systolicValues },
+        { name: "舒张压", color: "#ef8f45", values: diastolicValues },
+      ],
+      unit: "mmHg",
+      decimals: 0,
+      minSpan: 16,
+      emptyText: "最近 7 天至少需要 2 次有效血压记录，这里才会形成趋势图。",
+    }),
+  });
+}
+
+function renderSugarTrendCard(rangeItems) {
+  const sugarValues = rangeItems.map((item) => convertBloodSugarToMmol(item.log.bloodSugarValue, item.log.bloodSugarUnit));
+  const latestItem = findLatestTrendItem(rangeItems, (item) => item.log.bloodSugarValue !== "");
+  const latestSummary = latestItem ? summarizeBloodSugar(latestItem.log) : summarizeBloodSugar(normalizeHealthLog());
+  const averageSugar = averageTrendValues(sugarValues);
+  const averageValue = averageSugar === null ? "待记录" : `${formatTrendNumber(averageSugar, 1)} mmol/L`;
+  const latestMmol = latestItem
+    ? convertBloodSugarToMmol(latestItem.log.bloodSugarValue, latestItem.log.bloodSugarUnit)
+    : null;
+  const latestValue = latestMmol === null ? "待记录" : `${formatTrendNumber(latestMmol, 1)} mmol/L`;
+  const timingLabel = latestItem
+    ? latestItem.log.bloodSugarTiming === "postmeal" ? "餐后 2 小时" : "空腹 / 餐前"
+    : "未记录";
+
+  return renderHealthTrendCard({
+    title: "血糖趋势",
+    subtitle: "会将不同单位统一换算为 mmol/L 绘制，方便一眼看出波动。",
+    meta: latestItem ? `最新 ${latestItem.label}` : "待记录",
+    stats: [
+      renderTrendStat("最新值", latestValue),
+      renderTrendStat("7 日均值", averageValue),
+      renderTrendStat("记录类型", timingLabel),
+      renderTrendStat("最新状态", latestSummary.statusLabel),
+    ].join(""),
+    legend: renderTrendLegend([
+      { label: "血糖值", color: "#cc5a3d" },
+    ]),
+    chart: renderTrendSvg({
+      ariaLabel: "最近 7 天血糖趋势图",
+      labels: rangeItems.map((item) => item.label),
+      series: [
+        { name: "血糖值", color: "#cc5a3d", values: sugarValues },
+      ],
+      unit: "mmol/L",
+      decimals: 1,
+      minSpan: 2,
+      emptyText: "最近 7 天至少需要 2 次有效血糖记录，这里才会形成趋势图。",
+    }),
+  });
+}
+
+function renderHealthTrendCard({ title, subtitle, meta, stats, legend, chart }) {
+  return `
+    <article class="health-trend-card">
+      <div class="health-trend-card__head">
+        <div>
+          <h3>${escapeHtml(title)}</h3>
+          <p class="health-trend-card__subtitle">${escapeHtml(subtitle)}</p>
+        </div>
+        <span class="health-trend-card__meta">${escapeHtml(meta)}</span>
+      </div>
+      <div class="health-trend-card__stats">
+        ${stats}
+      </div>
+      ${legend}
+      ${chart}
+    </article>
+  `;
+}
+
+function renderTrendStat(label, value) {
+  return `
+    <div class="health-trend-stat">
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+    </div>
+  `;
+}
+
+function renderTrendLegend(items) {
+  return `
+    <div class="health-trend-legend">
+      ${items.map((item) => `
+        <span class="health-trend-legend__item">
+          <span class="health-trend-legend__swatch" style="background:${item.color}"></span>
+          ${escapeHtml(item.label)}
+        </span>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderTrendSvg({
+  ariaLabel,
+  labels,
+  series,
+  unit,
+  decimals = 0,
+  minSpan = 1,
+  emptyText,
+}) {
+  const validValues = series
+    .flatMap((item) => item.values)
+    .filter((value) => Number.isFinite(value));
+
+  if (validValues.length < 2) {
+    return `<div class="health-trend-chart health-trend-chart__empty">${escapeHtml(emptyText)}</div>`;
+  }
+
+  const width = 460;
+  const height = 240;
+  const padding = { top: 18, right: 16, bottom: 42, left: 44 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const rawMin = Math.min(...validValues);
+  const rawMax = Math.max(...validValues);
+  const span = Math.max(rawMax - rawMin, minSpan);
+  const valuePadding = Math.max(span * 0.18, decimals === 0 ? 4 : 0.4);
+  const minValue = Math.max(0, rawMin - valuePadding);
+  const maxValue = rawMax + valuePadding;
+  const safeSpan = Math.max(maxValue - minValue, minSpan);
+  const tickCount = 4;
+  const labelY = height - 12;
+  const getX = (index) => padding.left + (chartWidth * index) / Math.max(labels.length - 1, 1);
+  const getY = (value) => padding.top + ((maxValue - value) / safeSpan) * chartHeight;
+  const yTicks = Array.from({ length: tickCount }, (_, index) => {
+    const ratio = index / (tickCount - 1);
+    const value = maxValue - safeSpan * ratio;
+    return {
+      y: padding.top + chartHeight * ratio,
+      label: `${formatTrendNumber(value, decimals)} ${unit}`,
+    };
+  });
+
+  const gridLines = yTicks.map((tick) => `
+    <g>
+      <line class="health-trend-chart__grid" x1="${padding.left}" y1="${tick.y}" x2="${width - padding.right}" y2="${tick.y}"></line>
+      <text class="health-trend-chart__range" x="${padding.left - 8}" y="${tick.y + 4}" text-anchor="end">${escapeHtml(tick.label)}</text>
+    </g>
+  `).join("");
+
+  const xLabels = labels.map((label, index) => `
+    <text class="health-trend-chart__axis" x="${getX(index)}" y="${labelY}" text-anchor="middle">${escapeHtml(label)}</text>
+  `).join("");
+
+  const paths = series.map((item) => buildTrendPathSegments(item.values, getX, getY).map((segment) => `
+    <path class="health-trend-chart__line" d="${segment}" stroke="${item.color}"></path>
+  `).join("")).join("");
+
+  const points = series.map((item) => item.values.map((value, index) => {
+    if (!Number.isFinite(value)) {
+      return "";
+    }
+
+    return `
+      <circle
+        class="health-trend-chart__point"
+        cx="${getX(index)}"
+        cy="${getY(value)}"
+        r="4.5"
+        fill="${item.color}"
+      >
+        <title>${escapeHtml(`${labels[index]} ${item.name} ${formatTrendNumber(value, decimals)} ${unit}`)}</title>
+      </circle>
+    `;
+  }).join("")).join("");
+
+  return `
+    <div class="health-trend-chart">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(ariaLabel)}">
+        ${gridLines}
+        ${paths}
+        ${points}
+        ${xLabels}
+      </svg>
+    </div>
+  `;
+}
+
+function buildTrendPathSegments(values, getX, getY) {
+  const segments = [];
+  let current = [];
+
+  values.forEach((value, index) => {
+    if (!Number.isFinite(value)) {
+      if (current.length >= 2) {
+        segments.push(pointsToPath(current));
+      }
+      current = [];
+      return;
+    }
+
+    current.push([getX(index), getY(value)]);
+  });
+
+  if (current.length >= 2) {
+    segments.push(pointsToPath(current));
+  }
+
+  return segments;
+}
+
+function pointsToPath(points) {
+  return points.map(([x, y], index) => `${index === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
+}
+
+function findLatestTrendItem(items, predicate) {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (predicate(items[index])) {
+      return items[index];
+    }
+  }
+
+  return null;
+}
+
+function averageTrendValues(values) {
+  const validValues = values.filter((value) => Number.isFinite(value));
+  if (validValues.length === 0) {
+    return null;
+  }
+
+  return validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
+}
+
+function convertBloodSugarToMmol(value, unit) {
+  if (!Number.isFinite(Number(value))) {
+    return null;
+  }
+
+  return unit === "mg" ? Number(value) / 18 : Number(value);
+}
+
+function toTrendNumber(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+function formatTrendNumber(value, digits = 0) {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+
+  return digits === 0 ? String(Math.round(value)) : value.toFixed(digits);
 }
 
 function summarizeBloodPressure(log) {
