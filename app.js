@@ -39,7 +39,6 @@ const bpDiastolicEl = document.getElementById("bpDiastolic");
 const bloodSugarValueEl = document.getElementById("bloodSugarValue");
 const bloodSugarUnitEl = document.getElementById("bloodSugarUnit");
 const bloodSugarTimingEl = document.getElementById("bloodSugarTiming");
-const relapseStatusEl = document.getElementById("relapseStatus");
 const bodyConditionStatusEl = document.getElementById("bodyConditionStatus");
 const healthConditionNoteEl = document.getElementById("healthConditionNote");
 const stockBoardEl = document.getElementById("stockBoard");
@@ -137,7 +136,6 @@ function attachEvents() {
     bloodSugarValueEl,
     bloodSugarUnitEl,
     bloodSugarTimingEl,
-    relapseStatusEl,
     bodyConditionStatusEl,
     healthConditionNoteEl,
   ].forEach((field) => {
@@ -592,7 +590,6 @@ function normalizeHealthLog(log = {}) {
     bloodSugarValue: toNumberOrBlank(log.bloodSugarValue),
     bloodSugarUnit: log.bloodSugarUnit === "mg" ? "mg" : "mmol",
     bloodSugarTiming: log.bloodSugarTiming === "postmeal" ? "postmeal" : "fasting",
-    relapseStatus: (log.relapseStatus || "").trim(),
     bodyConditionStatus: (log.bodyConditionStatus || "").trim(),
     note: repairKnownHealthLogNote((log.note || "").trim()),
     updatedAt: log.updatedAt || "",
@@ -604,7 +601,7 @@ function repairKnownHealthLogNote(note) {
     ["鏃╀笂鏁板€肩◢楂橈紝涓嬪崍宸插洖绋炽€?", "早上数值稍高，下午已回稳。"],
     ["椁愬悗琛€绯栧洖钀斤紝渚夸簬婕旂ず鍗曚綅鎹㈢畻銆?", "餐后血糖回落，便于演示单位换算。"],
     ["浠婂ぉ鏈夎交寰尝鍔紝宸插姞寮鸿瀵熴€?", "今天有轻微波动，已加强观察。"],
-    ["杩戜袱澶╄秼浜庣ǔ瀹氾紝鍙洿鎺ュ睍绀鸿秼鍔垮浘銆?", "近两天趋于稳定，可直接展示趋势图。"],
+    ["杩戜袱澶╄秼浜庣ǔ瀹氾紝鍙洿鎺ュ睍绀鸿秼鍔垮浘銆?", "近两天趋于稳定，无不良反应。"],
   ]);
 
   return replacements.get(note) || note;
@@ -1152,13 +1149,13 @@ function seedDemoData() {
 
 function buildDemoHealthLogs() {
   const samples = [
-    { offset: -6, systolic: 138, diastolic: 88, sugar: 7.4, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "早上数值稍高，下午已回稳。" },
-    { offset: -5, systolic: 134, diastolic: 86, sugar: 7.1, unit: "mmol", timing: "fasting", relapse: "none", body: "stable", note: "" },
-    { offset: -4, systolic: 129, diastolic: 82, sugar: 122, unit: "mg", timing: "postmeal", relapse: "none", body: "good", note: "餐后血糖回落，便于演示单位换算。" },
-    { offset: -3, systolic: 126, diastolic: 80, sugar: 6.6, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "" },
-    { offset: -2, systolic: 131, diastolic: 83, sugar: 6.9, unit: "mmol", timing: "postmeal", relapse: "fluctuating", body: "average", note: "今天有轻微波动，已加强观察。" },
-    { offset: -1, systolic: 127, diastolic: 79, sugar: 6.4, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "" },
-    { offset: 0, systolic: 124, diastolic: 78, sugar: 6.2, unit: "mmol", timing: "fasting", relapse: "none", body: "good", note: "近两天趋于稳定，可直接展示趋势图。" },
+    { offset: -6, systolic: 138, diastolic: 88, sugar: 7.4, unit: "mmol", timing: "fasting", body: "stable", note: "早上数值稍高，下午已回稳。" },
+    { offset: -5, systolic: 134, diastolic: 86, sugar: 7.1, unit: "mmol", timing: "fasting", body: "stable", note: "" },
+    { offset: -4, systolic: 129, diastolic: 82, sugar: 122, unit: "mg", timing: "postmeal", body: "good", note: "餐后血糖回落，便于演示单位换算。" },
+    { offset: -3, systolic: 126, diastolic: 80, sugar: 6.6, unit: "mmol", timing: "fasting", body: "good", note: "" },
+    { offset: -2, systolic: 131, diastolic: 83, sugar: 6.9, unit: "mmol", timing: "postmeal", body: "average", note: "今天有轻微波动，已加强观察。" },
+    { offset: -1, systolic: 127, diastolic: 79, sugar: 6.4, unit: "mmol", timing: "fasting", body: "good", note: "" },
+    { offset: 0, systolic: 124, diastolic: 78, sugar: 6.2, unit: "mmol", timing: "fasting", body: "good", note: "近两天趋于稳定，可直接展示趋势图。" },
   ];
 
   return Object.fromEntries(
@@ -1171,7 +1168,6 @@ function buildDemoHealthLogs() {
         bloodSugarValue: sample.sugar,
         bloodSugarUnit: sample.unit,
         bloodSugarTiming: sample.timing,
-        relapseStatus: sample.relapse,
         bodyConditionStatus: sample.body,
         note: sample.note,
         updatedAt: date.toISOString(),
@@ -1264,7 +1260,6 @@ function populateHealthLogForm(log) {
   bloodSugarValueEl.value = log.bloodSugarValue === "" ? "" : String(log.bloodSugarValue);
   bloodSugarUnitEl.value = log.bloodSugarUnit;
   bloodSugarTimingEl.value = log.bloodSugarTiming;
-  relapseStatusEl.value = log.relapseStatus;
   bodyConditionStatusEl.value = log.bodyConditionStatus;
   healthConditionNoteEl.value = log.note;
 }
@@ -1276,7 +1271,6 @@ function readHealthLogForm() {
     bloodSugarValue: bloodSugarValueEl.value,
     bloodSugarUnit: bloodSugarUnitEl.value,
     bloodSugarTiming: bloodSugarTimingEl.value,
-    relapseStatus: relapseStatusEl.value,
     bodyConditionStatus: bodyConditionStatusEl.value,
     note: healthConditionNoteEl.value,
   });
@@ -1287,7 +1281,6 @@ function hasHealthLogContent(log) {
     log.bloodPressureSystolic,
     log.bloodPressureDiastolic,
     log.bloodSugarValue,
-    log.relapseStatus,
     log.bodyConditionStatus,
     log.note,
   ].some((value) => value !== "" && value !== null && typeof value !== "undefined");
@@ -1353,13 +1346,12 @@ function handleHealthLogReset() {
 function renderHealthLogSummary(log) {
   if (!hasHealthLogContent(log)) {
     healthLogSummaryEl.className = "health-log-summary empty-state";
-    healthLogSummaryEl.textContent = "还没有今日健康记录。录入血压、血糖、是否复发和身体状况后，这里会自动汇总状态。";
+    healthLogSummaryEl.textContent = "还没有今日健康记录。录入血压、血糖和身体状况后，这里会自动汇总状态。";
     return;
   }
 
   const pressureSummary = summarizeBloodPressure(log);
   const sugarSummary = summarizeBloodSugar(log);
-  const relapseSummary = summarizeRelapse(log.relapseStatus);
   const bodySummary = summarizeBodyCondition(log.bodyConditionStatus);
   const cards = [
     renderHealthStatCard({
@@ -1375,13 +1367,6 @@ function renderHealthLogSummary(log) {
       statusLabel: sugarSummary.statusLabel,
       statusClassName: sugarSummary.statusClassName,
       meta: sugarSummary.meta,
-    }),
-    renderHealthStatCard({
-      title: "复发情况",
-      value: relapseSummary.value,
-      statusLabel: relapseSummary.statusLabel,
-      statusClassName: relapseSummary.statusClassName,
-      meta: relapseSummary.meta,
     }),
     renderHealthStatCard({
       title: "身体状况",
@@ -1847,36 +1832,6 @@ function summarizeBloodSugar(log) {
     statusLabel: "正常",
     statusClassName: "",
     meta: `${timingLabel}记录，处于常见血糖范围内。`,
-  };
-}
-
-function summarizeRelapse(status) {
-  const statusMap = {
-    none: {
-      value: "无复发",
-      statusLabel: "稳定",
-      statusClassName: "",
-      meta: "今天未记录到明显复发或异常波动。",
-    },
-    fluctuating: {
-      value: "有波动",
-      statusLabel: "留意",
-      statusClassName: "pill--warning",
-      meta: "今天有轻微异常波动，建议继续结合症状观察。",
-    },
-    relapse: {
-      value: "有复发",
-      statusLabel: "关注",
-      statusClassName: "pill--danger",
-      meta: "今天出现复发或明显异常波动，建议重点标注。",
-    },
-  };
-
-  return statusMap[status] || {
-    value: "未记录",
-    statusLabel: "待记录",
-    statusClassName: "pill--muted",
-    meta: "可记录今天是否出现复发、反复发作或明显异常。",
   };
 }
 
